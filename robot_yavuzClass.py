@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python 
 
 import rospy
 import sys
@@ -60,8 +60,9 @@ class Robot:
      self.rangess.header.frame_id='base_scan'
      self.rangess.ranges=msg.ranges[0:72]
      self.rangess.intensities=msg.intensities[0:72]
-     self.pub.publish(self.rangess)
-     print(self.rangess.ranges[0])
+     #self.pub.publish(self.rangess)
+     self.min_dist = min(self.rangess.ranges)
+     print(self.min_dist)
       
 #------------------------------------------------------------------------------------------         
     #Callback function For CAMERA
@@ -74,22 +75,21 @@ class Robot:
 	    except self.cv2.error as e:
 	 	    print(e)
 	 
-	    #else:
-	 	#   self.image.cv2.imwrite('camerax_image.jpeg', cv2.img)
+	 #   else:
+	 #	    self.image.cv2.imwrite('camerax_image.jpeg', cv2.img)
 			 	 	
 #------------------------------------------------------------------------------------------		 
 #------------------------------------------------------------------------------------------		 
     def start_robot(self):
         self.speed.linear.x = 0.22
-        self.speed.publish(self.cmd_pub)
+        #self.speed.publish(self.cmd_pub)
      
      
         while not rospy.is_shutdown():
-         if(self.min_distance<1):
-             self.cmd_pub.linear = 0.0
-             #self.cam_sub() 
-         
-         else:
+         if(self.min_dist<1):
+             self.cmd_pub.linear = 0.22
+             #self.cam_sub()
+         #else:
              self.cmd_pub.linear = 0.22
 	  	     
         self.loop_rate.sleep() 
@@ -98,4 +98,6 @@ if __name__ == '__main__':
      rospy.init_node('Robot', anonymous=True)		 
      
      robot_node = Robot()
-     robot_node.start_robot()
+     robot_node.start_robot() 
+		 
+		 
