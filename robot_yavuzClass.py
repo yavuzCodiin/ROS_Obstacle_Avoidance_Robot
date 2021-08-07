@@ -20,39 +20,54 @@ class Robot:
     
     def __init__(self):
         #Params
-        self.bridge = CvBridge()
-        self.speed = Twist()
-        self.image = None
+        self.bridge      = CvBridge()
+        self.speed       = Twist()
+        self.image       = None
         self.image_topic = "camera/rgb/image_raw"     
-        self.rangess = LaserScan()
-     
-          
+        self.rangess     = LaserScan()
+        self.min_dist    = 0
+        self.speed.linear.x = 0.0
+        self.speed.angular.x = 0.0
+
+
         # Node cycle rate (in Hz)
         self.loop_rate = rospy.Rate(2)
      
         #Publishers
+        
         #FOR LASER
         self.laser_pub = rospy.Publisher('/revised_scan', LaserScan, queue_size = 10)
+        
          #FOR CAMERA
      #--------------------------
      #Camera için Publisher yok|
      #--------------------------    
+        
          #FOR SPEED
         self.cmd_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-
-         
+#------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------        
         #Subscribers
+        
          #FOR LASER
-        rospy.Subscriber('/scan', LaserScan, self.callback)
+        #rospy.Subscriber('/scan', LaserScan, self.callback)
+        
          #FOR CAMERA
-        rospy.Subscriber(self.image_topic, Image, self.image_callback)
-     
+        #rospy.Subscriber(self.image_topic, Image, self.image_callback)
+        
+         #FOR SPEED
                 
     #def scann_callback(self, msg):
      #self.rangess = self.msg.ranges
      #self.min_distance = min(self.rangess)
      #print(self.min_distance)
-         
+
+    #CALLBCACK FOR TWIST() for to subscribe 
+    def callback_vel(self,data):
+        print(data)
+        
+
+    
     #Callback function For LASER      
     def callback(self, msg):
      current_time=rospy.Time.now()
@@ -62,7 +77,9 @@ class Robot:
      self.rangess.intensities=msg.intensities[0:72]
      #self.pub.publish(self.rangess)
      self.min_dist = min(self.rangess.ranges)
+     self.laser_pub.publish(self.rangess)
      print(self.min_dist)
+      
       
 #------------------------------------------------------------------------------------------         
     #Callback function For CAMERA
@@ -71,33 +88,43 @@ class Robot:
 	    try:
 	 
 	 	   self.image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-	 
+	       
 	    except self.cv2.error as e:
 	 	    print(e)
 	 
-	 #   else:
-	 #	    self.image.cv2.imwrite('camerax_image.jpeg', cv2.img)
-			 	 	
+	    else:
+	 	   self.foto = cv2.imwrite('camerax_sonimage.jpeg', self.image)
+	    self.loop_rate.sleep()		 	 	
 #------------------------------------------------------------------------------------------		 
 #------------------------------------------------------------------------------------------		 
     def start_robot(self):
-        self.speed.linear.x = 0.22
-        #self.speed.publish(self.cmd_pub)
-     
-     
+             
         while not rospy.is_shutdown():
+           
+         rospy.Subscriber('/scan', LaserScan, self.callback)
+         rospy.Subscriber("/cmd_vel", Twist, self.callback_vel)  
+         
+         self.speed.linear.x = 0.22
+         self.speed.angular.x = 0.0
+
+         self.cmd_pub.publish(self.speed)
+         
          if(self.min_dist<1):
-             self.cmd_pub.linear = 0.22
-             #self.cam_sub()
-         #else:
-             self.cmd_pub.linear = 0.22
+             self.speed.linear.x  = 0.0
+             self.speed.angular.x = 0.0
+             self.cmd_pub.publish(self.speed)
+             rospy.Subscriber(self.image_topic, Image, self.image_callback)    
+         
+         else:
+             print("fuuuu")
+             self.speed.linear.x = 0.22
+             self.cmd_pub.publish(self.speed)
 	  	     
         self.loop_rate.sleep() 
        
 if __name__ == '__main__':
+     
      rospy.init_node('Robot', anonymous=True)		 
      
      robot_node = Robot()
-     robot_node.start_robot() 
-		 
-		 
+     robot_node.start_robot()	 
