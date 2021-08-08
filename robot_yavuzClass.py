@@ -36,7 +36,7 @@ class Robot:
         #Publishers
         
         #FOR LASER
-        self.laser_pub = rospy.Publisher('/revised_scan', LaserScan, queue_size = 10)
+        #self.laser_pub = rospy.Publisher('/revised_scan', LaserScan, queue_size = 10)
         
          #FOR CAMERA
      #--------------------------
@@ -50,7 +50,7 @@ class Robot:
         #Subscribers
         
          #FOR LASER
-        #rospy.Subscriber('/scan', LaserScan, self.callback)
+        rospy.Subscriber('/scan', LaserScan, self.callback)    #pub laser scan
         
          #FOR CAMERA
         #rospy.Subscriber(self.image_topic, Image, self.image_callback)
@@ -65,9 +65,9 @@ class Robot:
     #CALLBCACK FOR TWIST() for to subscribe 
     def callback_vel(self,data):
         print(data)
-        
+        #self.loop_rate.sleep()
 
-    
+
     #Callback function For LASER      
     def callback(self, msg):
      current_time=rospy.Time.now()
@@ -75,11 +75,17 @@ class Robot:
      self.rangess.header.frame_id='base_scan'
      self.rangess.ranges=msg.ranges[0:72]
      self.rangess.intensities=msg.intensities[0:72]
-     #self.pub.publish(self.rangess)
-     self.min_dist = min(self.rangess.ranges)
+     #self.min_dist = min(self.rangess.ranges)
      self.laser_pub.publish(self.rangess)
-     print(self.min_dist)
-      
+     #print(self.min_dist)
+
+    def scan_callback(self, msg):
+        
+        for i in range(len(msg.ranges)):
+            self.min_dist = min(msg.ranges)
+        
+        print(self.min_dist)    
+
       
 #------------------------------------------------------------------------------------------         
     #Callback function For CAMERA
@@ -100,14 +106,15 @@ class Robot:
     def start_robot(self):
              
         while not rospy.is_shutdown():
-           
-         rospy.Subscriber('/scan', LaserScan, self.callback)
+         self.laser_pub = rospy.Publisher('/revised_scan', LaserScan, queue_size = 10)  
          rospy.Subscriber("/cmd_vel", Twist, self.callback_vel)  
          
          self.speed.linear.x = 0.22
          self.speed.angular.x = 0.0
-
          self.cmd_pub.publish(self.speed)
+
+         
+         rospy.Subscriber('/revised_scan', LaserScan, self.scan_callback)
          
          if(self.min_dist<1):
              self.speed.linear.x  = 0.0
@@ -117,14 +124,15 @@ class Robot:
          
          else:
              print("fuuuu")
-             self.speed.linear.x = 0.22
+             self.speed.linear.x  = 0.22
+             self.speed.angular.x = 0.0
              self.cmd_pub.publish(self.speed)
-	  	     
-        self.loop_rate.sleep() 
+             #self.loop_rate.sleep() 
        
 if __name__ == '__main__':
      
      rospy.init_node('Robot', anonymous=True)		 
      
      robot_node = Robot()
-     robot_node.start_robot()	 
+     robot_node.start_robot() 
+		 
