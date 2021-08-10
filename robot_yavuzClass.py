@@ -16,6 +16,8 @@ from geometry_msgs.msg import Twist
 import os
 
 #------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+
 class Robot:
     
     def __init__(self):
@@ -37,26 +39,26 @@ class Robot:
         #FOR LASER
         self.laser_pub = rospy.Publisher('/scan', LaserScan, queue_size = 10)
         
-         #FOR CAMERA
-     #--------------------------
-     #Camera için Publisher yok|
-     #--------------------------    
+        #FOR CAMERA
+        #--------------------------
+        #Camera için Publisher yok|
+        #--------------------------    
         
-         #FOR SPEED
+        #FOR SPEED
         self.cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-
-        
 
 #------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------        
+
         #Subscribers
         
-         #FOR LASER
+        #FOR LASER
         rospy.Subscriber('/scan', LaserScan, self.scan_callback)
-         #FOR CAMERA
-        #start robot içersinde
+         
+        #FOR CAMERA
+        rospy.Subscriber(self.image_topic, Image, self.image_callback)
         
-         #FOR SPEED
+        #FOR SPEED
         rospy.Subscriber("/cmd_vel", Twist, self.callback_vel)
 
     #CALLBCACK FOR TWIST() for to subscribe 
@@ -67,14 +69,12 @@ class Robot:
     #CALLBACK FOR LASER() for to subscribe
     def scan_callback(self, msg):
         
-        #self.laser_pub.publish(self.rangess)
-        
         for i in range(len(msg.ranges)):
             self.min_dist = min(msg.ranges)
-        
-        #self.loop_rate.sleep()
-      
+
+#------------------------------------------------------------------------------------------      
 #------------------------------------------------------------------------------------------         
+    
     #Callback function For CAMERA
     def image_callback(self, msg):
 	    try:
@@ -82,20 +82,18 @@ class Robot:
 	       
 	    except self.cv2.error as e:
 	 	    print(e)
-	 
-	    else:
-             self.foto = cv2.imwrite('camerax_sonimage.jpeg', self.image)
-             print("Image Saved!")
-             self.loop_rate.sleep()     
-	    		 	   	
+	      		 	   	
 #------------------------------------------------------------------------------------------		 
 #------------------------------------------------------------------------------------------		 
+    
     def start_robot(self):
-
+        
         self.laser_pub.publish(self.rangess)
-
-        self.speed.linear.x = 0.11
+              
+        self.speed.linear.x = 0.13
         self.speed.angular.z = 0.0
+        
+        self.cmd_pub.publish(self.speed)
         self.cmd_pub.publish(self.speed)
 
         while not rospy.is_shutdown():
@@ -105,11 +103,18 @@ class Robot:
              self.speed.linear.x  = 0.0
              self.speed.angular.z = 0.0
              self.cmd_pub.publish(self.speed)
-             rospy.Subscriber(self.image_topic, Image, self.image_callback)    
+             
+             try:
+                 self.foto = cv2.imwrite('camerax_sonimage.jpeg', self.image)
+                 print("Image Saved!")
+                 
+             except cv2.error as e:
+                 print(e)
+
          
          else:
-             print("continue")
-             self.speed.linear.x  = 0.22
+             print("cont")
+             self.speed.linear.x  = 0.10
              self.speed.angular.z = 0.0
              self.cmd_pub.publish(self.speed)
          
@@ -121,7 +126,3 @@ if __name__ == '__main__':
      
     robot_node = Robot()
     robot_node.start_robot()
-    
-    
-    
-    
